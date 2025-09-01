@@ -81,7 +81,7 @@ def init_gemini():
     """Initialize Gemini LLM"""
     try:
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model="gemini-2.5-flash",
             temperature=0.5,
             max_output_tokens=800,
         )
