@@ -100,7 +100,7 @@ def scrape_article_content(url):
     except Exception as e:
         return f"Error fetching article: {e}"
 
-def human_delay(min_seconds=2, max_seconds=5):
+def human_delay(min_seconds=2, max_seconds=4):
     sleep_time = random.uniform(min_seconds, max_seconds)
     print(f"[...] Waiting {sleep_time:.2f} seconds")
     time.sleep(sleep_time)

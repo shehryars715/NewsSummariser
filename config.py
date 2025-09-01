@@ -4,4 +4,4 @@ HEADERS = {
                   '(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
 DB_FILE = "data/articles.db"
-CHECK_INTERVAL = 1200  # 20 minutes
+CHECK_INTERVAL = 7200  # 2 hours
