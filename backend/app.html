@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News RAG API Testing Interface</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --accent-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --gray-color: #95a5a6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+            border-radius: 0 0 10px 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-button:hover:not(.active) {
+            background-color: #f0f0f0;
+        }
+        
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .response-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .response-title {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+        
+        .summary {
+            background-color: #e8f4fc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            white-space: pre-wrap;
+        }
+        
+        .article-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 3px solid var(--secondary-color);
+        }
+        
+        .article-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+        }
+        
+        .article-excerpt {
+            color: #555;
+            margin-bottom: 0.8rem;
+        }
+        
+        .article-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+        
+        .category-badge {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+        
+        .relevance-score {
+            font-weight: 600;
+        }
+        
+        .url-link {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .url-link:hover {
+            text-decoration: underline;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 1rem;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .article-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>News RAG API Testing Interface</h1>
+            <p>Test your FastAPI endpoints with this beautiful interface</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="tabs">
+            <button class="tab-button active" data-tab="query">Query Articles</button>
+            <button class="tab-button" data-tab="search">Search Articles</button>
+            <button class="tab-button" data-tab="summarize">Summarize by URL</button>
+        </div>
+        
+        <!-- Query Articles Tab -->
+        <div class="tab-content active" id="query-tab">
+            <h2>Query Articles with RAG Summary</h2>
+            <p>Enter your query to get a summary based on relevant articles</p>
+            
+            <div class="form-group">
+                <label for="query-input">Your Query</label>
+                <textarea id="query-input" rows="3" placeholder="Enter your news query..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="max-articles">Maximum Articles to Use</label>
+                <select id="max-articles">
+                    <option value="1">1 Article</option>
+                    <option value="2">2 Articles</option>
+                    <option value="3" selected>3 Articles</option>
+                    <option value="4">4 Articles</option>
+                    <option value="5">5 Articles</option>
+                </select>
+            </div>
+            
+            <button id="query-button">Get Summary</button>
+            
+            <div class="loading" id="query-loading">
+                <div class="spinner"></div>
+                <p>Processing your query...</p>
+            </div>
+            
+            <div class="response-container" id="query-response" style="display: none;">
+                <h3 class="response-title">Query Results</h3>
+                <div id="query-summary"></div>
+                <h4>Articles Used</h4>
+                <div id="query-articles"></div>
+            </div>
+        </div>
+        
+        <!-- Search Articles Tab -->
+        <div class="tab-content" id="search-tab">
+            <h2>Search Articles</h2>
+            <p>Find relevant articles without generating a summary</p>
+            
+            <div class="form-group">
+                <label for="search-input">Search Query</label>
+                <textarea id="search-input" rows="3" placeholder="Enter your search query..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="search-max-articles">Maximum Articles</label>
+                <select id="search-max-articles">
+                    <option value="3" selected>3 Articles</option>
+                    <option value="5">5 Articles</option>
+                    <option value="10">10 Articles</option>
+                </select>
+            </div>
+            
+            <button id="search-button">Search Articles</button>
+            
+            <div class="loading" id="search-loading">
+                <div class="spinner"></div>
+                <p>Searching for articles...</p>
+            </div>
+            
+            <div class="response-container" id="search-response" style="display: none;">
+                <h3 class="response-title">Search Results</h3>
+                <div id="search-results"></div>
+            </div>
+        </div>
+        
+        <!-- Summarize by URL Tab -->
+        <div class="tab-content" id="summarize-tab">
+            <h2>Summarize Article by URL</h2>
+            <p>Enter a URL to get a summary of a specific article</p>
+            
+            <div class="form-group">
+                <label for="url-input">Article URL</label>
+                <input type="text" id="url-input" placeholder="Enter article URL...">
+            </div>
+            
+            <button id="summarize-button">Generate Summary</button>
+            
+            <div class="loading" id="summarize-loading">
+                <div class="spinner"></div>
+                <p>Generating summary...</p>
+            </div>
+            
+            <div class="response-container" id="summarize-response" style="display: none;">
+                <h3 class="response-title">Article Summary</h3>
+                <div id="url-summary"></div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <div class="container">
+            <p>News RAG API Testing Interface &copy; 2023</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    // Update active tab button
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    
+                    // Update active tab content
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // API base URL
+            const API_BASE = 'http://localhost:8000';
+            
+            // Query Articles functionality
+            const queryButton = document.getElementById('query-button');
+            queryButton.addEventListener('click', async () => {
+                const query = document.getElementById('query-input').value.trim();
+                const maxArticles = document.getElementById('max-articles').value;
+                
+                if (!query) {
+                    alert('Please enter a query');
+                    return;
+                }
+                
+                // Show loading
+                document.getElementById('query-loading').style.display = 'block';
+                document.getElementById('query-response').style.display = 'none';
+                
+                try {
+                    const response = await fetch(`${API_BASE}/query`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            max_articles: parseInt(maxArticles)
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || 'Error processing query');
+                    }
+                    
+                    // Display the summary
+                    const summaryDiv = document.getElementById('query-summary');
+                    summaryDiv.innerHTML = `
+                        <div class="summary">
+                            <h4>Generated Summary</h4>
+                            <p>${data.summary}</p>
+                        </div>
+                    `;
+                    
+                    // Display the articles used
+                    const articlesDiv = document.getElementById('query-articles');
+                    articlesDiv.innerHTML = '';
+                    
+                    data.articles_used.forEach(article => {
+                        const articleElement = document.createElement('div');
+                        articleElement.className = 'article-card';
+                        articleElement.innerHTML = `
+                            <h4 class="article-title">${article.title}</h4>
+                            <p class="article-excerpt">${article.excerpt}</p>
+                            <div class="article-meta">
+                                <a href="${article.url}" target="_blank" class="url-link">View Article</a>
+                                <span class="category-badge">${article.category}</span>
+                                <span class="relevance-score">Relevance: ${(article.relevance_score * 100).toFixed(1)}%</span>
+                            </div>
+                        `;
+                        articlesDiv.appendChild(articleElement);
+                    });
+                    
+                    // Show response container
+                    document.getElementById('query-response').style.display = 'block';
+                    
+                } catch (error) {
+                    const articlesDiv = document.getElementById('query-articles');
+                    articlesDiv.innerHTML = `
+                        <div class="error">
+                            <p>Error: ${error.message}</p>
+                        </div>
+                    `;
+                    document.getElementById('query-response').style.display = 'block';
+                } finally {
+                    document.getElementById('query-loading').style.display = 'none';
+                }
+            });
+            
+            // Search Articles functionality
+            const searchButton = document.getElementById('search-button');
+            searchButton.addEventListener('click', async () => {
+                const query = document.getElementById('search-input').value.trim();
+                const maxArticles = document.getElementById('search-max-articles').value;
+                
+                if (!query) {
+                    alert('Please enter a search query');
+                    return;
+                }
+                
+                // Show loading
+                document.getElementById('search-loading').style.display = 'block';
+                document.getElementById('search-response').style.display = 'none';
+                
+                try {
+                    const response = await fetch(`${API_BASE}/search`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            max_articles: parseInt(maxArticles)
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || 'Error searching articles');
+                    }
+                    
+                    // Display the search results
+                    const resultsDiv = document.getElementById('search-results');
+                    resultsDiv.innerHTML = '';
+                    
+                    if (data.articles && data.articles.length > 0) {
+                        data.articles.forEach(article => {
+                            const articleElement = document.createElement('div');
+                            articleElement.className = 'article-card';
+                            articleElement.innerHTML = `
+                                <h4 class="article-title">${article.title}</h4>
+                                <p class="article-excerpt">${article.excerpt}</p>
+                                <div class="article-meta">
+                                    <a href="${article.url}" target="_blank" class="url-link">View Article</a>
+                                    <span class="category-badge">${article.category}</span>
+                                    <span class="relevance-score">Relevance: ${(article.relevance_score * 100).toFixed(1)}%</span>
+                                </div>
+                            `;
+                            resultsDiv.appendChild(articleElement);
+                        });
+                    } else {
+                        resultsDiv.innerHTML = '<p>No articles found for your query.</p>';
+                    }
+                    
+                    // Show response container
+                    document.getElementById('search-response').style.display = 'block';
+                    
+                } catch (error) {
+                    const resultsDiv = document.getElementById('search-results');
+                    resultsDiv.innerHTML = `
+                        <div class="error">
+                            <p>Error: ${error.message}</p>
+                        </div>
+                    `;
+                    document.getElementById('search-response').style.display = 'block';
+                } finally {
+                    document.getElementById('search-loading').style.display = 'none';
+                }
+            });
+            
+            // Summarize by URL functionality
+            const summarizeButton = document.getElementById('summarize-button');
+            summarizeButton.addEventListener('click', async () => {
+                const url = document.getElementById('url-input').value.trim();
+                
+                if (!url) {
+                    alert('Please enter a URL');
+                    return;
+                }
+                
+                // Show loading
+                document.getElementById('summarize-loading').style.display = 'block';
+                document.getElementById('summarize-response').style.display = 'none';
+                
+                try {
+                    const response = await fetch(`${API_BASE}/summarize-url`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            url: url
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(data.detail || 'Error generating summary');
+                    }
+                    
+                    // Display the summary
+                    const summaryDiv = document.getElementById('url-summary');
+                    summaryDiv.innerHTML = `
+                        <div class="article-card">
+                            <h4 class="article-title">${data.title}</h4>
+                            <div class="article-meta">
+                                <a href="${data.url}" target="_blank" class="url-link">View Original Article</a>
+                                <span class="category-badge">${data.category}</span>
+                            </div>
+                        </div>
+                        <div class="summary">
+                            <h4>Generated Summary</h4>
+                            <p>${data.summary}</p>
+                        </div>
+                    `;
+                    
+                    // Show response container
+                    document.getElementById('summarize-response').style.display = 'block';
+                    
+                } catch (error) {
+                    const summaryDiv = document.getElementById('url-summary');
+                    summaryDiv.innerHTML = `
+                        <div class="error">
+                            <p>Error: ${error.message}</p>
+                        </div>
+                    `;
+                    document.getElementById('summarize-response').style.display = 'block';
+                } finally {
+                    document.getElementById('summarize-loading').style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ from config import BASE_URL, HEADERS
 from utils import extract_article_data, scrape_article_content, human_delay, classify_category
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from datetime import timezone
 
 # Load environment variables from .env file
 load_dotenv()
@@ -30,11 +31,18 @@ def article_exists(article_url):
 
 def insert_article(article_meta):
 
+    raw_time = article_meta.get("publish_time")
+    if not raw_time or raw_time in ["N/A", "", None]:
+        publish_time = datetime.now(timezone.utc).isoformat()  # always valid
+    else:
+        publish_time = raw_time  # assume scraper already gave ISO8601 string
+
+
     # Prepare data
     article_data = {
         "title": article_meta['title'],
         "excerpt": article_meta['excerpt'],
-        "publish_time": article_meta['publish_time'],
+        "publish_time": publish_time,
         "url": article_meta['url'],
         "content": article_meta['content'],
         "category": article_meta['category']}
@@ -46,18 +54,24 @@ def insert_article(article_meta):
         print(f"[!] Failed to insert article: {e}")
 
 
+from datetime import datetime, timedelta
+
 def delete_old_articles():
-    
     try:
-        # Calculate the date 1 day ago
+        # Calculate the cutoff datetime (1 days ago)
         cutoff_date = (datetime.now() - timedelta(days=1)).isoformat()
-        
-        # Delete articles where 'scraped_at' is older than the cutoff date
-        response = supabase.table('news_articles').lt('scraped_at', cutoff_date).delete().execute()
-        
-        if response.data:
-            print(f"[+] Deleted {len(response.data)} old article(s) from Supabase.")
-            
+
+        # Delete rows where scraped_at < cutoff_date
+        response = (
+            supabase.table("news_articles")
+            .delete()
+            .lt("scraped_at", cutoff_date)
+            .execute()
+        )
+
+        deleted_count = len(response.data) if response.data else 0
+        print(f"[+] Deleted {deleted_count} old article(s) from Supabase.")
+
     except Exception as e:
         print(f"[!] Error deleting old articles: {e}")
 
