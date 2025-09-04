@@ -1,4 +1,4 @@
-from scrap import scrape_once, check_supabase_connection
+from scrape import scrape_once, check_supabase_connection, delete_old_articles
 from rich.console import Console
 from rich.panel import Panel
 from rich import print
@@ -8,10 +8,8 @@ import sys
 # Initialize Rich console for pretty output
 console = Console()
 
-def main():
-    """
-    Main function to run the scraping process.
-    """
+def run_scraping_cycle():
+    
     console.print(Panel.fit("📰 Article Scraper to Supabase", style="bold blue"))
     console.print("Starting the scraping process...\n")
 
@@ -19,33 +17,41 @@ def main():
     console.rule("Step 1: Database Connection Check")
     if not check_supabase_connection():
         console.print("\n[red]❌ Aborting. Could not establish a database connection.[/red]")
-        sys.exit(1) # Exit with an error code
+        sys.exit(1)  # Exit with an error code
     console.print("[green]✅ Database connection confirmed.[/green]\n")
 
     # 2. Run the Scraper
     console.rule("Step 2: Scraping Articles")
-    start_time = time.time() # Start a timer
+    start_time = time.time()  # Start a timer
 
     try:
-        scrape_once() # This is your main scraping function
+        scrape_once()  # Main scraping function
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠️  Process interrupted by user. Exiting gracefully.[/yellow]")
         sys.exit(0)
     except Exception as e:
         console.print(f"\n[red]❌ A critical error occurred during scraping: {e}[/red]")
-        # It's often helpful to see the full traceback for debugging
         import traceback
         console.print(f"[red]{traceback.format_exc()}[/red]")
-        sys.exit(1)
     finally:
-        # This block runs whether there was an error or not
         elapsed_time = time.time() - start_time
         console.print(f"\n[i] Total execution time: {elapsed_time:.2f} seconds[/i]")
 
-    # 3. Conclusion
-    console.rule("Complete")
-    console.print("[green]✅ Scraping cycle finished.[/green]")
+    # 3. Delete Old Articles
+    console.rule("Step 3: Deleting Old Articles")
+    try:
+        delete_old_articles()
+    except Exception as e:
+        console.print(f"[red]❌ Failed to delete old articles: {e}[/red]")
 
-# Run the main function when the script is executed
+    # 4. Conclusion
+    console.rule("Cycle Complete")
+    console.print("[green]✅ Scraping cycle finished.[/green]\n")
+
+
 if __name__ == "__main__":
-    main()
+    console.print("[bold blue]Starting continuous scraping every 2 hours...[/bold blue]\n")
+    while True:
+        run_scraping_cycle()
+        console.print("[i]Waiting 2 hours before next cycle...[/i]\n")
+        time.sleep(7200)  # Sleep for 2 hours (7200 seconds)

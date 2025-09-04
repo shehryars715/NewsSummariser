@@ -1,5 +1,8 @@
 import os
 from dotenv import load_dotenv
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
+
 
 BASE_URL = "https://www.dawn.com/latest-news"
 HEADERS = {
@@ -13,9 +16,14 @@ CHECK_INTERVAL = 7200  # 2 hours
 # Load environment variables
 load_dotenv()
 
-DB_FILE = "data/articles.db"
-FAISS_STORE_PATH = "faiss_store"
 
 # Gemini models
 EMBEDDING_MODEL = "models/embedding-001"
 CHAT_MODEL = "gemini-2.5-flash"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+# Initialize Gemini Embeddings
+embedding_model = GoogleGenerativeAIEmbeddings(
+    model=EMBEDDING_MODEL,
+    google_api_key=GEMINI_API_KEY
+)

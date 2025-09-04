@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from config import HEADERS
 import os
 from dotenv import load_dotenv
+from config import embedding_model
 
 # Load environment variables from .env file
 load_dotenv()
@@ -99,6 +100,16 @@ def scrape_article_content(url):
 
     except Exception as e:
         return f"Error fetching article: {e}"
+    
+
+def generate_embedding(text):
+    """Generates a single embedding for combined title + content."""
+    try:
+        return embedding_model.embed_query(text)
+    
+    except Exception as e:
+        print(f"[!] Error generating embedding: {e}")
+        return []
 
 def human_delay(min_seconds=2, max_seconds=4):
     sleep_time = random.uniform(min_seconds, max_seconds)
