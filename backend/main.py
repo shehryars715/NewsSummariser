@@ -1,4 +1,5 @@
 from scrape import scrape_once, check_supabase_connection, delete_old_articles
+from faiss_store import faiss_create
 from rich.console import Console
 from rich.panel import Panel
 from rich import print
@@ -53,5 +54,6 @@ if __name__ == "__main__":
     console.print("[bold blue]Starting continuous scraping every 2 hours...[/bold blue]\n")
     while True:
         run_scraping_cycle()
+        faiss_create()  # Update FAISS index after scraping
         console.print("[i]Waiting 2 hours before next cycle...[/i]\n")
         time.sleep(7200)  # Sleep for 2 hours (7200 seconds)

@@ -43,7 +43,7 @@ def classify_category(text):
             top_score = result["scores"][0]
 
             # Optional: log low confidence
-            if top_score < 0.4:
+            if top_score < 0.3:
                 print(f"[!] Low confidence ({top_score:.2f}) for: {text[:60]}")
                 return "Others"
 

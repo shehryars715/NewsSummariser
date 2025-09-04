@@ -41,7 +41,7 @@ def insert_article(article_meta):
     
     try:
         response = supabase.table('news_articles').insert(article_data).execute()
-        print(f"[✓] Article inserted: {article_meta['title']}{{article_meta['category']}}")
+        print(f"[✓] Article inserted: {article_meta['title']}{article_meta['category']}")
     except Exception as e:
         print(f"[!] Failed to insert article: {e}")
 
