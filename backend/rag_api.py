@@ -3,18 +3,18 @@ from pydantic import BaseModel
 import faiss
 import numpy as np
 import pickle
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_google_genai import ChatGoogleGenerativeAI  
+from contextlib import asynccontextmanager
+from langchain.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate  # Modern prompt handling
 from config import embedding_model, GEMINI_API_KEY, CHAT_MODEL
 import os
+from typing import List
 
-# Initialize FastAPI
-app = FastAPI(title="News RAG API", description="Retrieve and Generate summaries from news articles")
 
-# Initialize Gemini LLM
+# Initialize Gemini LLM with modern syntax
 llm = ChatGoogleGenerativeAI(
     model=CHAT_MODEL,
-    google_api_key=GEMINI_API_KEY,
+    api_key=GEMINI_API_KEY,  # Changed from google_api_key to api_key
     temperature=0.3
 )
 
@@ -36,7 +36,7 @@ class ArticleSummary(BaseModel):
 class RAGResponse(BaseModel):
     query: str
     summary: str
-    articles_used: list[ArticleSummary]
+    articles_used: List[ArticleSummary]  # Use capital List for type hints
 
 def load_faiss_index():
     """Load FAISS index and metadata on startup."""
@@ -79,43 +79,64 @@ def retrieve_articles(query: str, k: int = 3):
     return articles
 
 def generate_summary(query: str, articles: list):
-    """Generate summary using Gemini LLM."""
+    """Generate summary using Gemini LLM with modern prompt templates."""
+    
     # Prepare context from articles
     context = "\n\n".join([
         f"Article {i+1}: {article['title']}\n{article['excerpt']}"
         for i, article in enumerate(articles)
     ])
     
-    # Create prompt
-    system_prompt = SystemMessage(content="""
-    You are a news summarization expert. Based on the provided articles, create a comprehensive summary that answers the user's query.
+    # Create prompt template using modern approach
+    system_template = """
+    You are a news summarization expert. Your task is to generate a clear and concise summary that answers the user's query, using only the most relevant and accurate information from the provided articles.
+
+Guidelines:
+- Only use information from the relevant articles
+- Do not include unrelated content
+- If the information is limited, explain that clearly
+- Be objective, factual, and long (4-5 paragraphs)
+- Maintain a journalistic tone
+- Just give summary according to the query, do not add any additional information like "As an AI language model" or "Based on the articles provided"
+    """
     
-    Guidelines:
-    - Focus on summarising these articles
-    - Use information from all provided articles when relevant
-    - Keep the summary concise but informative (2-3 paragraphs)
-    - Mention key facts, dates, and figures when available
-    - Write in a clear, journalistic style
-    - If the articles do not provide enough information, state that clearly
-    """)
-    
-    human_prompt = HumanMessage(content=f"""
+    human_template = """
+    Query: {query}
     
     Articles:
     {context}
     
     Please provide a summary that answers the query based on these articles.
-    """)
+    """
+    
+    # Build the prompt
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate.from_template(system_template),
+        HumanMessagePromptTemplate.from_template(human_template)
+    ])
+    
+    # Format the prompt with variables
+    formatted_prompt = prompt.format_messages(
+        query=query,
+        context=context
+    )
     
     # Generate response
-    response = llm([system_prompt, human_prompt])
+    response = llm.invoke(formatted_prompt)  # Use invoke() instead of direct call
     return response.content
 
-@app.on_event("startup")
-async def startup_event():
-    """Load FAISS index on startup."""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     if not load_faiss_index():
         print("Warning: FAISS index not loaded. API will not work properly.")
+    yield  # Startup code runs before this, shutdown code can go after
+
+# Initialize FastAPI
+app = FastAPI(
+    title="News RAG API",
+    description="Retrieve and Generate summaries from news articles",
+    lifespan=lifespan
+)
 
 @app.get("/")
 async def root():

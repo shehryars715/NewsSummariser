@@ -60,9 +60,7 @@ if __name__ == "__main__":
     
     # Test queries
     queries = [
-        "Pakistan cricket team performance",
-        "technology trends in Pakistan",
-        "business news today"
+        "Kidnapping Case" 
     ]
     
     for query in queries:
