@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 13% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+
+    --primary: 210 100% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 220 13% 13%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 220 13% 46%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 220 13% 13%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 210 100% 45%;
+
+    --radius: 0.5rem;
+
+    /* Professional Design Tokens */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 45%), hsl(220 100% 55%));
+    --gradient-hero: linear-gradient(135deg, hsl(210 100% 97%), hsl(220 100% 98%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 99%));
+    --shadow-card: 0 2px 8px -2px hsl(220 13% 13% / 0.1);
+    --shadow-card-hover: 0 8px 25px -5px hsl(220 13% 13% / 0.15);
+    --shadow-hero: 0 20px 25px -5px hsl(210 100% 45% / 0.1);
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* News-specific colors */
+    --news-header: 220 13% 5%;
+    --news-brand: 210 100% 45%;
+    --news-breaking: 0 85% 60%;
+    --news-category-sports: 120 60% 45%;
+    --news-category-tech: 210 100% 45%;
+    --news-category-business: 45 93% 47%;
+    --news-category-national: 0 72% 51%;
+    --news-category-other: 270 50% 40%;
+    --news-summary-bg: 210 100% 97%;
+    --news-summary-border: 210 100% 90%;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 220 13% 9%;
+    --foreground: 220 13% 95%;
+
+    --card: 220 13% 12%;
+    --card-foreground: 220 13% 95%;
+
+    --popover: 220 13% 12%;
+    --popover-foreground: 220 13% 95%;
+
+    --primary: 210 100% 55%;
+    --primary-foreground: 220 13% 9%;
+
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 13% 95%;
+
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 13% 65%;
+
+    --accent: 220 13% 15%;
+    --accent-foreground: 220 13% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 220 13% 95%;
+
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 210 100% 55%;
+
+    /* Professional Design Tokens - Dark Mode */
+    --gradient-primary: linear-gradient(135deg, hsl(210 100% 55%), hsl(220 100% 65%));
+    --gradient-hero: linear-gradient(135deg, hsl(220 13% 12%), hsl(220 13% 15%));
+    --gradient-card: linear-gradient(145deg, hsl(220 13% 12%), hsl(220 13% 15%));
+    --shadow-card: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --shadow-card-hover: 0 8px 25px -5px hsl(0 0% 0% / 0.4);
+    --shadow-hero: 0 20px 25px -5px hsl(210 100% 55% / 0.2);
+
+    /* News-specific colors - dark mode */
+    --news-header: 220 13% 5%;
+    --news-brand: 210 100% 55%;
+    --news-breaking: 0 85% 60%;
+    --news-category-sports: 120 60% 55%;
+    --news-category-tech: 210 100% 55%;
+    --news-category-business: 45 93% 57%;
+    --news-category-national: 0 72% 61%;
+    --news-category-other: 270 50% 50%;
+    --news-summary-bg: 220 13% 12%;
+    --news-summary-border: 220 13% 20%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .card-gradient {
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-smooth);
+  }
+
+  .card-gradient:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .hero-gradient {
+    background: var(--gradient-hero);
+  }
+
+  .btn-gradient {
+    background: var(--gradient-primary);
+    transition: var(--transition-smooth);
+  }
+
+  .btn-gradient:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-hero);
+  }
+}

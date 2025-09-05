@@ -2,6 +2,7 @@ import faiss
 import numpy as np
 import pickle
 import os
+import io
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from config import embedding_model
@@ -14,9 +15,10 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# File paths
-FAISS_INDEX_PATH = "data/faiss_index.bin"
-METADATA_PATH = "data/metadata.pkl"
+# Storage bucket name (make sure this bucket exists in Supabase)
+BUCKET_NAME = "Faiss"
+FAISS_FILE = "faiss_index.bin"
+META_FILE = "metadata.pkl"
 
 def fetch_articles():
     """Get all articles from database."""
@@ -28,56 +30,61 @@ def fetch_articles():
 def generate_embeddings(articles):
     """Create embeddings for title + excerpt."""
     print("Generating embeddings...")
-    texts = []
-    metadata = []
+    texts, metadata = [], []
     
     for article in articles:
-        # Combine title and excerpt
         text = f"{article['title']} {article['excerpt']}"
         texts.append(text)
         metadata.append(article)
     
-    # Generate embeddings
     embeddings = []
     for i, text in enumerate(texts):
-        if i % 10 == 0:  # Progress update
+        if i % 10 == 0:
             print(f"Processing {i}/{len(texts)}")
-        
         embedding = embedding_model.embed_query(text)
         embeddings.append(embedding)
     
     return np.array(embeddings, dtype=np.float32), metadata
 
 def create_faiss_index(embeddings, metadata):
-    """Create and save FAISS index."""
+    """Create FAISS index and upload to Supabase storage (overwrite old files)."""
     print("Creating FAISS index...")
     
-    # Create index (768 is Gemini embedding dimension)
+    # Create FAISS index
     index = faiss.IndexFlatL2(768)
     index.add(embeddings)
     
-    # Save index and metadata
-    faiss.write_index(index, FAISS_INDEX_PATH)
-    with open(METADATA_PATH, 'wb') as f:
-        pickle.dump(metadata, f)
+    # Serialize FAISS index to bytes
+    faiss_bytes = bytes(faiss.serialize_index(index))
     
-    print(f"Saved FAISS index with {index.ntotal} embeddings")
+    # Serialize metadata to bytes
+    meta_buffer = io.BytesIO()
+    pickle.dump(metadata, meta_buffer)
+    meta_buffer.seek(0)
+    meta_bytes = meta_buffer.read()
+    
+    # Upload FAISS index (replace old file)
+    print("Uploading FAISS index to Supabase Storage...")
+    supabase.storage.from_(BUCKET_NAME).update(FAISS_FILE, faiss_bytes)
+    
+    # Upload metadata (replace old file)
+    print("Uploading metadata to Supabase Storage...")
+    supabase.storage.from_(BUCKET_NAME).update(META_FILE, meta_bytes)
+    
+    print(f"✅ Updated FAISS index with {index.ntotal} embeddings")
     return index
 
 
 def faiss_create():
-    """Main function to generate embeddings."""
+    """Main function to generate embeddings and upload FAISS index."""
     print("=== FAISS Embedding Generator ===")
     
-    # Create data directory
-    os.makedirs("data", exist_ok=True)
-    print("Data directory ensured.")
-    
-    # Generate embeddings
+    # Fetch articles & generate embeddings
     articles = fetch_articles()
     embeddings, metadata = generate_embeddings(articles)
-    create_faiss_index(embeddings, metadata)
     
+    # Create FAISS index and upload
+    create_faiss_index(embeddings, metadata)
 
 if __name__ == "__main__":
     faiss_create()
