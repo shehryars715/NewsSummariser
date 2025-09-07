@@ -86,5 +86,3 @@ def faiss_create():
     # Create FAISS index and upload
     create_faiss_index(embeddings, metadata)
 
-if __name__ == "__main__":
-    faiss_create()
