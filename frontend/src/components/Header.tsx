@@ -12,7 +12,7 @@ export function Header() {
 
   const checkApiHealth = async () => {
     try {
-      const response = await fetch('http://localhost:8000/health', {
+      const response = await fetch('https://newssummariser-5a49.onrender.com/', {
         method: 'GET',
       });
       setIsHealthy(response.ok);

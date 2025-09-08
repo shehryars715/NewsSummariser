@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://newssummariser-5a49.onrender.com';
 
 export interface Article {
   id?: number;
