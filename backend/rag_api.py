@@ -308,6 +308,6 @@ async def summarize_by_url(request: URLSummaryRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    
+    PORT = int(os.environ.get("PORT", 8000))
     # Run the API
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=PORT, log_level="info")
