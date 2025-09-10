@@ -195,9 +195,9 @@ npm run dev     # Starts development server
 ```
 
 ### **4. Access the Application**
-- **Frontend**: http://localhost:8080
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/
+- **Frontend**: https://news-summariser-iota.vercel.app/
+- **API**: https://newssummariser-5a49.onrender.com
+- **Health Check**: https://newssummariser-5a49.onrender.com/
 
 ## 📈 Roadmap & Future Enhancements
 
@@ -274,7 +274,7 @@ This project is licensed under the **MIT License**
 
 **Project Links**:
 - **Repository**: https://github.com/shehryars715/NewsSummariser
-- **Live Demo**: 
+- **Live Demo**: https://news-summariser-iota.vercel.app/
 
 ---
 
