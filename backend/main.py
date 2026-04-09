@@ -1,16 +1,15 @@
-from scrape import scrape_once, check_supabase_connection, delete_old_articles
-from faiss_store import faiss_create
+from src.scraper.scraper import scrape_once, check_supabase_connection, delete_old_articles
+from src.app.services.faiss_store import faiss_create
 from rich.console import Console
 from rich.panel import Panel
 from rich import print
 import time
 import sys
 
-# Initialize Rich console for pretty output
 console = Console()
 
+
 def run_scraping_cycle():
-    
     console.print(Panel.fit("📰 Article Scraper to Supabase", style="bold blue"))
     console.print("Starting the scraping process...\n")
 
@@ -18,15 +17,15 @@ def run_scraping_cycle():
     console.rule("Step 1: Database Connection Check")
     if not check_supabase_connection():
         console.print("\n[red]❌ Aborting. Could not establish a database connection.[/red]")
-        sys.exit(1)  # Exit with an error code
+        sys.exit(1)
     console.print("[green]✅ Database connection confirmed.[/green]\n")
 
     # 2. Run the Scraper
     console.rule("Step 2: Scraping Articles")
-    start_time = time.time()  # Start a timer
+    start_time = time.time()
 
     try:
-        scrape_once()  # Main scraping function
+        scrape_once()
     except KeyboardInterrupt:
         console.print("\n[yellow]⚠️  Process interrupted by user. Exiting gracefully.[/yellow]")
         sys.exit(0)
@@ -54,6 +53,6 @@ if __name__ == "__main__":
     console.print("[bold blue]Starting continuous scraping every 2 hours...[/bold blue]\n")
     while True:
         run_scraping_cycle()
-        faiss_create()  # Update FAISS index after scraping
+        faiss_create()
         console.print("[i]Waiting 2 hours before next cycle...[/i]\n")
-        time.sleep(7200)  # Sleep for 2 hours (7200 seconds)
+        time.sleep(7200)

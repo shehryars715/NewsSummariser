@@ -1,23 +1,12 @@
-from bs4 import BeautifulSoup
 import requests
-import os
-from datetime import datetime, timedelta
-from config import BASE_URL, HEADERS
-from utils import extract_article_data, scrape_article_content, human_delay, classify_category
-from supabase import create_client, Client
-from dotenv import load_dotenv
-from datetime import timezone
+from bs4 import BeautifulSoup
+from datetime import datetime, timedelta, timezone
 
-# Load environment variables from .env file
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-# Initialize the Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
+from src.core.config import BASE_URL, HEADERS
+from src.core.database import supabase
+from src.scraper.parser import extract_article_data, scrape_article_content
+from src.scraper.classifier import classify_category
+from src.utils.helpers import human_delay
 
 
 def article_exists(article_url):
@@ -29,24 +18,23 @@ def article_exists(article_url):
         print(f"[!] Error checking article: {e}")
         return True
 
-def insert_article(article_meta):
 
+def insert_article(article_meta):
     raw_time = article_meta.get("publish_time")
     if not raw_time or raw_time in ["N/A", "", None]:
-        publish_time = datetime.now(timezone.utc).isoformat()  # always valid
+        publish_time = datetime.now(timezone.utc).isoformat()
     else:
-        publish_time = raw_time  # assume scraper already gave ISO8601 string
+        publish_time = raw_time
 
-
-    # Prepare data
     article_data = {
         "title": article_meta['title'],
         "excerpt": article_meta['excerpt'],
         "publish_time": publish_time,
         "url": article_meta['url'],
         "content": article_meta['content'],
-        "category": article_meta['category']}
-    
+        "category": article_meta['category'],
+    }
+
     try:
         response = supabase.table('news_articles').insert(article_data).execute()
         print(f"[✓] Article inserted: {article_meta['title']}{article_meta['category']}")
@@ -54,27 +42,19 @@ def insert_article(article_meta):
         print(f"[!] Failed to insert article: {e}")
 
 
-from datetime import datetime, timedelta
-
 def delete_old_articles():
     try:
-        # Calculate the cutoff datetime (1 days ago)
         cutoff_date = (datetime.now() - timedelta(days=1)).isoformat()
-
-        # Delete rows where scraped_at < cutoff_date
         response = (
             supabase.table("news_articles")
             .delete()
             .lt("scraped_at", cutoff_date)
             .execute()
         )
-
         deleted_count = len(response.data) if response.data else 0
         print(f"[+] Deleted {deleted_count} old article(s) from Supabase.")
-
     except Exception as e:
         print(f"[!] Error deleting old articles: {e}")
-
 
 
 def get_latest_news_page():
@@ -82,12 +62,26 @@ def get_latest_news_page():
     response.raise_for_status()
     return BeautifulSoup(response.text, 'html.parser')
 
-def scrape_once():
 
+def check_supabase_connection():
+    """Attempts a simple query to verify the connection to Supabase."""
+    print("[ ] Attempting to connect to Supabase database...")
+    try:
+        response = supabase.table('news_articles').select("id", count="exact").limit(1).execute()
+        print("[✓] Successfully connected to Supabase database.")
+        print(f"[i] Found {response.count} total articles in the database.")
+        return True
+    except Exception as e:
+        print(f"[!] Failed to connect to Supabase database: {e}")
+        print(f"[!] Please check your SUPABASE_URL and SUPABASE_KEY environment variables.")
+        return False
+
+
+def scrape_once():
     if not check_supabase_connection():
         print("[!] Scraping aborted due to database connection failure.")
         return
-    
+
     print(f"\n[✓] Checking for new articles at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     try:
         soup = get_latest_news_page()
@@ -114,39 +108,13 @@ def scrape_once():
         content = scrape_article_content(meta['url'])
         meta['content'] = content
 
-        # 🔥 Classify article category (use title + excerpt + content)
         text_for_classification = f"{meta['title']} {meta['excerpt']}"
         meta['category'] = classify_category(text_for_classification)
 
-        insert_article(meta) # This now calls the Supabase function
+        insert_article(meta)
         new_count += 1
 
     if new_count == 0:
         print("[=] No new articles found.")
     else:
         print(f"[+] {new_count} new article(s) added to DB.")
-
-
-# Initialize the Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# --- NEW: DATABASE CONNECTION CHECK FUNCTION ---
-def check_supabase_connection():
-    """
-    Attempts a simple query to verify the connection to Supabase is working.
-    """
-    print("[ ] Attempting to connect to Supabase database...")
-    try:
-        # Try a simple, low-cost query (e.g., get the count of records)
-        response = supabase.table('news_articles').select("id", count="exact").limit(1).execute()
-        # If no exception is raised, the connection is successful
-        print("[✓] Successfully connected to Supabase database.")
-        print(f"[i] Found {response.count} total articles in the database.")
-        return True
-    except Exception as e:
-        # This will catch connection errors, invalid credentials, etc.
-        print(f"[!] Failed to connect to Supabase database: {e}")
-        print(f"[!] Please check your SUPABASE_URL and SUPABASE_KEY in config_supabase.py")
-        return False
-
-
