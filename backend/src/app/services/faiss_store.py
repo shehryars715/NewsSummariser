@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import io
 
-from src.core.config import embedding_model
+from src.core.config import get_embedding_dimension, get_embedding_model
 from src.core.database import supabase
 
 BUCKET_NAME = "Faiss"
@@ -21,8 +21,9 @@ def fetch_articles():
 
 def generate_embeddings(articles):
     """Create embeddings for title + excerpt."""
+    embedding_model = get_embedding_model()
     if embedding_model is None:
-        raise RuntimeError("Gemini embedding model is not configured")
+        raise RuntimeError("Local embedding model is not configured")
 
     print("Generating embeddings...")
     texts, metadata = [], []
@@ -32,12 +33,7 @@ def generate_embeddings(articles):
         texts.append(text)
         metadata.append(article)
 
-    embeddings = []
-    for i, text in enumerate(texts):
-        if i % 10 == 0:
-            print(f"Processing {i}/{len(texts)}")
-        embedding = embedding_model.embed_query(text)
-        embeddings.append(embedding)
+    embeddings = embedding_model.embed_documents(texts)
 
     return np.array(embeddings, dtype=np.float32), metadata
 
@@ -46,7 +42,11 @@ def create_faiss_index(embeddings, metadata):
     """Create FAISS index and upload to Supabase storage."""
     print("Creating FAISS index...")
 
-    index = faiss.IndexFlatL2(768)
+    embedding_dimension = get_embedding_dimension()
+    if embedding_dimension is None:
+        raise RuntimeError("Embedding dimension is not configured")
+
+    index = faiss.IndexFlatL2(embedding_dimension)
     index.add(embeddings)
 
     faiss_bytes = bytes(faiss.serialize_index(index))

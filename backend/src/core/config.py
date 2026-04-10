@@ -2,9 +2,9 @@ import os
 from dotenv import load_dotenv
 
 try:
-    from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    from sentence_transformers import SentenceTransformer
 except ImportError:
-    GoogleGenerativeAIEmbeddings = None
+    SentenceTransformer = None
 
 load_dotenv()
 
@@ -19,16 +19,54 @@ HEADERS = {
 }
 CHECK_INTERVAL = 7200  # 2 hours
 
-# Gemini models
-EMBEDDING_MODEL = "models/embedding-001"
+# Models
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 CHAT_MODEL = "gemini-2.5-flash"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Initialize Gemini Embeddings
+# Initialize local embeddings lazily so unrelated imports do not trigger model load
 embedding_model = None
+EMBEDDING_DIMENSION = None
 
-if GoogleGenerativeAIEmbeddings and GEMINI_API_KEY:
-    embedding_model = GoogleGenerativeAIEmbeddings(
-        model=EMBEDDING_MODEL,
-        google_api_key=GEMINI_API_KEY
-    )
+
+class LocalEmbeddingModel:
+    def __init__(self, model_name: str):
+        self.client = SentenceTransformer(model_name)
+        self.dimension = self.client.get_sentence_embedding_dimension()
+
+    def embed_documents(self, texts):
+        embeddings = self.client.encode(
+            texts,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+        )
+        return embeddings.tolist()
+
+    def embed_query(self, text):
+        embedding = self.client.encode(
+            text,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+        )
+        return embedding.tolist()
+
+
+def get_embedding_model():
+    global embedding_model, EMBEDDING_DIMENSION
+
+    if embedding_model is not None:
+        return embedding_model
+
+    if SentenceTransformer is None:
+        return None
+
+    embedding_model = LocalEmbeddingModel(EMBEDDING_MODEL)
+    EMBEDDING_DIMENSION = embedding_model.dimension
+    return embedding_model
+
+
+def get_embedding_dimension():
+    model = get_embedding_model()
+    if model is None:
+        return None
+    return EMBEDDING_DIMENSION

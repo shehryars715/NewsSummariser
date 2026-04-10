@@ -1,12 +1,13 @@
 import time
 import random
-from src.core.config import embedding_model
+from src.core.config import get_embedding_model
 
 
 def generate_embedding(text):
     """Generates a single embedding for combined title + content."""
+    embedding_model = get_embedding_model()
     if embedding_model is None:
-        print("[!] Gemini embedding model is not configured")
+        print("[!] Local embedding model is not configured")
         return []
 
     try:

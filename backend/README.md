@@ -1,12 +1,12 @@
 # News RAG Backend
 
-A Python backend system that scrapes news articles from Dawn.com, stores them in Supabase, generates embeddings using Google's Gemini AI, and provides a RAG (Retrieval-Augmented Generation) API for intelligent news querying.
+A Python backend system that scrapes news articles from Dawn.com, stores them in Supabase, generates embeddings using a local BGE model, and provides a RAG (Retrieval-Augmented Generation) API for intelligent news querying.
 
 ## 🚀 Features
 
 - **Automated News Scraping**: Continuously scrapes latest news from Dawn.com every 2 hours
 - **Intelligent Categorization**: Uses Hugging Face BART model to classify articles into categories
-- **Vector Search**: FAISS-based semantic search with Gemini embeddings
+- **Vector Search**: FAISS-based semantic search with local BGE embeddings
 - **RAG API**: FastAPI endpoints for querying news with AI-generated summaries
 - **Cloud Storage**: Supabase database and storage integration
 - **Automatic Cleanup**: Removes articles older than 1 day
@@ -22,7 +22,7 @@ A Python backend system that scrapes news articles from Dawn.com, stores them in
                                 ▼                        ▼
                        ┌──────────────────┐    ┌─────────────────┐
                        │ Category Classifier│    │ FAISS Embeddings│
-                       │ (Hugging Face)     │    │ (Gemini AI)     │
+                       │ (Hugging Face)     │    │ (Local BGE)     │
                        └──────────────────┘    └─────────────────┘
                                                         │
                                                         ▼
@@ -36,7 +36,7 @@ A Python backend system that scrapes news articles from Dawn.com, stores them in
 
 - Python 3.8+
 - Supabase account with database and storage bucket
-- Google Gemini API key
+- Google Gemini API key for summarization
 - Hugging Face API token
 
 ## 📦 Installation
@@ -244,7 +244,7 @@ The system classifies articles into these categories:
 
 ### AI Models
 
-- **Embeddings**: `models/embedding-001` (Google Gemini)
+- **Embeddings**: `BAAI/bge-base-en-v1.5` (local Sentence Transformers)
 - **Chat**: `gemini-2.5-flash` (Google Gemini)
 - **Classification**: `facebook/bart-large-mnli` (Hugging Face)
 
