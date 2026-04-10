@@ -1,8 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
+from urllib.robotparser import RobotFileParser
 
-from src.core.config import BASE_URL, HEADERS
+from src.core.config import BASE_URL, HEADERS, ROBOTS_URL
 from src.core.database import supabase
 from src.scraper.parser import extract_article_data, scrape_article_content
 from src.scraper.classifier import classify_category
@@ -63,6 +64,31 @@ def get_latest_news_page():
     return BeautifulSoup(response.text, 'html.parser')
 
 
+def get_robot_parser():
+    response = requests.get(ROBOTS_URL, headers=HEADERS, timeout=10)
+    response.raise_for_status()
+
+    parser = RobotFileParser()
+    parser.set_url(ROBOTS_URL)
+    parser.parse(response.text.splitlines())
+    return parser
+
+
+def get_latest_article_links(soup):
+    seen_urls = set()
+    articles = []
+
+    for link in soup.find_all('a', href=True):
+        meta = extract_article_data(link)
+        if not meta['url'] or meta['url'] in seen_urls:
+            continue
+
+        seen_urls.add(meta['url'])
+        articles.append(meta)
+
+    return articles
+
+
 def check_supabase_connection():
     """Attempts a simple query to verify the connection to Supabase."""
     print("[ ] Attempting to connect to Supabase database...")
@@ -82,6 +108,16 @@ def scrape_once():
         print("[!] Scraping aborted due to database connection failure.")
         return
 
+    try:
+        robot_parser = get_robot_parser()
+    except Exception as e:
+        print(f"[!] Failed to fetch robots.txt: {e}")
+        return
+
+    if not robot_parser.can_fetch(HEADERS['User-Agent'], BASE_URL):
+        print(f"[!] Scraping blocked by robots.txt for {BASE_URL}")
+        return
+
     print(f"\n[✓] Checking for new articles at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     try:
         soup = get_latest_news_page()
@@ -89,24 +125,30 @@ def scrape_once():
         print(f"[!] Failed to fetch main page: {e}")
         return
 
-    article_blocks = soup.find_all('article', class_='story')
+    article_blocks = get_latest_article_links(soup)
     new_count = 0
 
     for article in article_blocks:
-        meta = extract_article_data(article)
-        if not meta['url']:
-            continue
+        meta = article
 
         if article_exists(meta['url']):
             print(f"[=] Article already in database: {meta['title']}")
+            continue
+
+        if not robot_parser.can_fetch(HEADERS['User-Agent'], meta['url']):
+            print(f"[=] Skipping blocked article: {meta['title']}")
             continue
 
         print(f"\n[→] Scraping new article: {meta['title']}")
         print(f"URL: {meta['url']}")
         human_delay()
 
-        content = scrape_article_content(meta['url'])
-        meta['content'] = content
+        article_page = scrape_article_content(meta['url'])
+        meta['content'] = article_page['content']
+        if meta['excerpt'] == 'N/A':
+            meta['excerpt'] = article_page['excerpt']
+        if meta['publish_time'] == 'N/A':
+            meta['publish_time'] = article_page['publish_time']
 
         text_for_classification = f"{meta['title']} {meta['excerpt']}"
         meta['category'] = classify_category(text_for_classification)

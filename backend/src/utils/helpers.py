@@ -5,6 +5,10 @@ from src.core.config import embedding_model
 
 def generate_embedding(text):
     """Generates a single embedding for combined title + content."""
+    if embedding_model is None:
+        print("[!] Gemini embedding model is not configured")
+        return []
+
     try:
         return embedding_model.embed_query(text)
     except Exception as e:

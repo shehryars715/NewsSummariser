@@ -6,9 +6,6 @@ load_dotenv()
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-if not HF_TOKEN:
-    raise EnvironmentError("Hugging Face token not found. Please set HF_TOKEN in your .env file.")
-
 API_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-mnli"
 headers = {
     "Authorization": f"Bearer {HF_TOKEN}",
@@ -23,6 +20,10 @@ CATEGORIES = [
 
 
 def classify_category(text):
+    if not HF_TOKEN:
+        print("[!] Hugging Face token not found. Please set HF_TOKEN in your .env file.")
+        return "uncategorized"
+
     payload = {
         "inputs": text,
         "parameters": {

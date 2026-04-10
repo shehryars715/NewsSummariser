@@ -21,6 +21,9 @@ def fetch_articles():
 
 def generate_embeddings(articles):
     """Create embeddings for title + excerpt."""
+    if embedding_model is None:
+        raise RuntimeError("Gemini embedding model is not configured")
+
     print("Generating embeddings...")
     texts, metadata = [], []
 

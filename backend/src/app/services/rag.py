@@ -43,6 +43,9 @@ def retrieve_articles(query: str, k: int = 3):
     if faiss_index is None or metadata is None:
         raise HTTPException(status_code=500, detail="FAISS index not loaded")
 
+    if embedding_model is None:
+        raise HTTPException(status_code=500, detail="Gemini embedding model is not configured")
+
     query_embedding = embedding_model.embed_query(query)
     query_vector = np.array([query_embedding], dtype=np.float32)
 
