@@ -1,80 +1,82 @@
 # News RAG Backend
 
-A Python backend system that scrapes news articles from Dawn.com, stores them in Supabase, generates embeddings using a local BGE model, and provides a RAG (Retrieval-Augmented Generation) API for intelligent news querying.
+A Python backend that scrapes news articles from Geo.tv, stores them in Supabase, generates semantic embeddings locally using `BAAI/bge-base-en-v1.5`, and exposes a RAG (Retrieval-Augmented Generation) API that returns AI-generated summaries via Google Gemini.
 
-## 🚀 Features
+## Features
 
-- **Automated News Scraping**: Continuously scrapes latest news from Dawn.com every 2 hours
-- **Intelligent Categorization**: Uses Hugging Face BART model to classify articles into categories
-- **Vector Search**: FAISS-based semantic search with local BGE embeddings
-- **RAG API**: FastAPI endpoints for querying news with AI-generated summaries
-- **Cloud Storage**: Supabase database and storage integration
-- **Automatic Cleanup**: Removes articles older than 1 day
+- **Automated News Scraping** — Scrapes latest articles from Geo.tv on a 2-hour loop
+- **Article Categorization** — Classifies articles using Hugging Face BART zero-shot classification
+- **Local Semantic Search** — FAISS index built from local BGE embeddings (no external embedding API)
+- **RAG API** — FastAPI server that retrieves relevant articles and generates summaries with Gemini
+- **Cloud Storage** — Supabase for article storage and FAISS index persistence
+- **Auto Cleanup** — Removes articles older than 1 day each cycle
 
-## 📋 System Architecture
+## Architecture
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Dawn.com      │───▶│  Scraper Module  │───▶│   Supabase DB   │
-│   (News Source) │    │  (scrape.py)     │    │   (Articles)    │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │                        │
-                                ▼                        ▼
-                       ┌──────────────────┐    ┌─────────────────┐
-                       │ Category Classifier│    │ FAISS Embeddings│
-                       │ (Hugging Face)     │    │ (Local BGE)     │
-                       └──────────────────┘    └─────────────────┘
-                                                        │
-                                                        ▼
-                                               ┌─────────────────┐
-                                               │   RAG API       │
-                                               │  (FastAPI)      │
-                                               └─────────────────┘
+┌──────────────┐     ┌────────────────┐     ┌──────────────┐
+│   Geo.tv     │────▶│  Scraper       │────▶│  Supabase DB │
+│  (News Src)  │     │  (scraper.py)  │     │  (Articles)  │
+└──────────────┘     └────────────────┘     └──────────────┘
+                            │                       │
+                            ▼                       ▼
+                     ┌────────────────┐     ┌──────────────────┐
+                     │  Classifier    │     │  Local BGE Model │
+                     │  (HF BART)    │     │  (bge-base-en)   │
+                     └────────────────┘     └──────────────────┘
+                                                    │
+                                                    ▼
+                                            ┌──────────────────┐
+                                            │  FAISS Index     │
+                                            │  (Supabase Stor) │
+                                            └──────────────────┘
+                                                    │
+                                                    ▼
+                                            ┌──────────────────┐
+                                            │  FastAPI Server  │
+                                            │  + Gemini LLM    │
+                                            └──────────────────┘
 ```
 
-## 🛠️ Prerequisites
+## Prerequisites
 
-- Python 3.8+
-- Supabase account with database and storage bucket
-- Google Gemini API key for summarization
-- Hugging Face API token
+- Python 3.10+
+- Supabase account (database + storage bucket)
+- Google Gemini API key (for summarization only)
+- Hugging Face API token (for article categorization)
 
-## 📦 Installation
+## Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/shehryars715/NewsSummariser/
-   cd backend
-   ```
+```bash
+git clone https://github.com/shehryars715/NewsSummariser/
+cd NewsSummariser/backend
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Environment Variables
 
-3. **Create environment file**
-   ```bash
-   cp .env.example .env
-   ```
+Create a `.env` file in the `backend/` directory:
 
-4. **Configure environment variables**
-   ```env
-   # Supabase Configuration
-   SUPABASE_URL=your_supabase_project_url
-   SUPABASE_KEY=your_supabase_anon_key
+```env
+# Supabase
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
 
-   # Google Gemini AI
-   GEMINI_API_KEY=your_gemini_api_key
+# Google Gemini (used for summarization)
+GEMINI_API_KEY=your_gemini_api_key
 
-   # Hugging Face (for article categorization)
-   HF_TOKEN=your_hugging_face_token
-   ```
+# Hugging Face (used for article categorization)
+HF_TOKEN=your_hugging_face_token
 
-## 🗄️ Database Setup
+# Optional: override the default embedding model
+# EMBEDDING_MODEL=BAAI/bge-base-en-v1.5
+```
 
-### Supabase Table Schema
+## Database Setup
 
-Create a table named `news_articles` with the following structure:
+### Supabase Table
 
 ```sql
 CREATE TABLE news_articles (
@@ -88,7 +90,6 @@ CREATE TABLE news_articles (
     scraped_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add indexes for better performance
 CREATE INDEX idx_news_articles_url ON news_articles(url);
 CREATE INDEX idx_news_articles_scraped_at ON news_articles(scraped_at);
 CREATE INDEX idx_news_articles_category ON news_articles(category);
@@ -96,207 +97,146 @@ CREATE INDEX idx_news_articles_category ON news_articles(category);
 
 ### Storage Bucket
 
-Create a storage bucket named `Faiss` in your Supabase project for storing FAISS index files.
+Create a storage bucket named `Faiss` in Supabase for storing the FAISS index and metadata files.
 
-## 🚀 Usage
+## Usage
 
-### 1. Run Continuous Scraper
+### Run the continuous scraper
 
-Starts the main scraping loop that runs every 2 hours:
+Scrapes articles, classifies them, stores to DB, rebuilds embeddings, and cleans old articles — every 2 hours:
 
 ```bash
 python main.py
 ```
 
-**What it does:**
-- Scrapes latest articles from Dawn.com
-- Classifies articles into categories
-- Stores in Supabase database
-- Generates and updates FAISS embeddings
-- Deletes articles older than 1 day
-
-### 2. Run One-time Scrape
-
-For manual scraping:
+### Start the API server
 
 ```bash
-python scrape.py
+python -m src.app.main
+# or
+uvicorn src.app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Generate FAISS Index
+## API Endpoints
 
-To manually update the vector embeddings:
+### `GET /` — Health check
 
-```bash
-python faiss_store.py
+```json
+{ "message": "News RAG API is running", "status": "healthy" }
 ```
 
-### 4. Start RAG API Server
+### `POST /query` — RAG query (retrieve + summarize)
 
-Launch the FastAPI server:
-
-```bash
-python rag_api.py
-```
-
-Or with uvicorn:
-```bash
-uvicorn rag_api:app --host 0.0.0.0 --port 8000 --reload
-```
-
-## 🔌 API Endpoints
-
-### Base URL: `http://localhost:8000`
-
-### 1. Health Check
-```http
-GET /
-```
-**Response:**
 ```json
 {
-    "message": "News RAG API is running",
-    "status": "healthy"
-}
-```
-
-### 2. Query Articles (RAG)
-```http
-POST /query
-Content-Type: application/json
-
-{
-    "query": "What's happening in Pakistan politics?",
-    "max_articles": 3
+  "query": "What's happening in Pakistan politics?",
+  "max_articles": 3
 }
 ```
 
 **Response:**
+
 ```json
 {
-    "query": "What's happening in Pakistan politics?",
-    "summary": "AI-generated summary based on retrieved articles...",
-    "articles_used": [
-        {
-            "title": "Article Title",
-            "excerpt": "Article excerpt...",
-            "url": "https://www.dawn.com/news/...",
-            "category": "National News from Pakistan",
-            "relevance_score": 0.85
-        }
-    ]
+  "query": "What's happening in Pakistan politics?",
+  "summary": "AI-generated summary...",
+  "articles_used": [
+    {
+      "title": "Article Title",
+      "excerpt": "Article excerpt...",
+      "url": "https://www.geo.tv/latest/...",
+      "category": "National News from Pakistan",
+      "relevance_score": 0.85
+    }
+  ]
 }
 ```
 
-### 3. Search Articles Only
-```http
-POST /search
-Content-Type: application/json
+### `POST /search` — Semantic search only (no summary)
 
+```json
 {
-    "query": "technology news",
-    "max_articles": 5
+  "query": "technology news",
+  "max_articles": 5
 }
 ```
 
-### 4. Summarize Specific Article
-```http
-POST /summarize-url
-Content-Type: application/json
+### `POST /summarize-url` — Summarize a specific article by URL
 
+```json
 {
-    "url": "https://www.dawn.com/news/1939445/..."
+  "url": "https://www.geo.tv/latest/659168-..."
 }
 ```
 
-## 📁 File Structure
+## Project Structure
 
 ```
 backend/
-├── main.py              # Main scraping orchestrator
-├── scrape.py            # Core scraping functionality
-├── utils.py             # Helper functions (categorization, content extraction)
-├── faiss_store.py       # FAISS index management
-├── rag_api.py          # FastAPI RAG server
-├── config.py           # Configuration and model initialization
-├── test.py             # Testing utilities
-├── .env                # Environment variables
-├── .gitignore          # Git ignore file
-└── requirements.txt    # Python dependencies
+├── main.py                          # Continuous scraping orchestrator
+├── requirements.txt
+├── .env
+└── src/
+    ├── core/
+    │   ├── config.py                # Model config, lazy BGE loader
+    │   └── database.py              # Supabase client
+    ├── app/
+    │   ├── main.py                  # FastAPI app entry point
+    │   ├── routes/
+    │   │   ├── query.py             # /query and /search endpoints
+    │   │   └── summarize.py         # /summarize-url endpoint
+    │   ├── schemas/
+    │   │   └── models.py            # Pydantic request/response models
+    │   └── services/
+    │       ├── faiss_store.py       # FAISS index build + upload
+    │       ├── rag.py               # FAISS search + article retrieval
+    │       └── llm.py               # Gemini summarization
+    ├── scraper/
+    │   ├── scraper.py               # Scrape loop, DB insert, cleanup
+    │   ├── parser.py                # HTML parsing, content extraction
+    │   └── classifier.py            # HF BART zero-shot classification
+    └── utils/
+        └── helpers.py               # Embedding helper, human delay
 ```
 
-## ⚙️ Configuration
+## AI Models
 
-### Article Categories
+| Purpose | Model | Runs |
+|---|---|---|
+| Embeddings | `BAAI/bge-base-en-v1.5` (768-dim) | Locally via Sentence Transformers |
+| Summarization | `gemini-2.5-flash` | Remote via Google API |
+| Classification | `facebook/bart-large-mnli` | Remote via Hugging Face Inference API |
 
-The system classifies articles into these categories:
+The embedding model is downloaded from Hugging Face on first use and cached locally. No API key is needed for embeddings. The FAISS index dimension is derived automatically from the model.
+
+## Scraping Settings
+
+| Setting | Value |
+|---|---|
+| Source | `https://www.geo.tv/latest-news` |
+| Interval | Every 2 hours (7200s) |
+| Retention | Articles older than 1 day are deleted |
+| Rate limiting | 2–4 second random delay between requests |
+
+## Article Categories
+
 - Technology and Innovation
 - Corporate and Business News
 - Sports and Athletics
 - National News from Pakistan
 
-### Scraping Settings
+## Troubleshooting
 
-- **Source**: Dawn.com latest news
-- **Interval**: Every 2 hours (7200 seconds)
-- **Retention**: Articles older than 1 day are automatically deleted
-- **Rate Limiting**: 2-4 second delays between requests
+| Problem | Fix |
+|---|---|
+| FAISS index not loading | Check `Faiss` bucket exists in Supabase storage; re-run `faiss_create()` |
+| Scraping returns nothing | Verify internet connection and that Geo.tv is accessible |
+| Embedding model slow on first run | Normal — BGE weights (~440 MB) are downloaded once then cached |
+| API 500 errors | Ensure `.env` variables are set and Supabase is reachable |
 
-### AI Models
+## License
 
-- **Embeddings**: `BAAI/bge-base-en-v1.5` (local Sentence Transformers)
-- **Chat**: `gemini-2.5-flash` (Google Gemini)
-- **Classification**: `facebook/bart-large-mnli` (Hugging Face)
-
-## 🔍 Monitoring
-
-The system provides console output with Rich formatting:
-- ✅ Successful operations
-- ❌ Error indicators  
-- ⚠️ Warnings
-- 📊 Statistics and progress
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **FAISS Index Not Loading**
-   - Check Supabase storage bucket exists
-   - Verify storage permissions
-   - Run `python faiss_store.py` to regenerate
-
-2. **Scraping Failures**
-   - Check internet connection
-   - Verify Dawn.com is accessible
-   - Review rate limiting delays
-
-3. **API Errors**
-   - Ensure all environment variables are set
-   - Check Gemini API quota
-   - Verify Supabase connection
-
-### Debug Mode
-
-Add debug logging:
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
-
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
+MIT
 
 For issues and questions:
 1. Check the troubleshooting section
