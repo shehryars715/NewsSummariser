@@ -1,0 +1,42 @@
+name: Scrape News Articles
+
+on:
+  schedule:
+    - cron: "0 */2 * * *"   # runs every 2 hours
+  workflow_dispatch:         # lets you trigger it manually from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper and rebuild FAISS index
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -c "
+          import sys
+          from src.scraper.scraper import scrape_once, delete_old_articles
+          from src.app.services.faiss_store import faiss_create
+
+          print('=== Starting scrape cycle ===')
+          scrape_once()
+          delete_old_articles()
+          faiss_create()
+          print('=== Cycle complete ===')
+          "
