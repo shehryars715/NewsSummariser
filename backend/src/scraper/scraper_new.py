@@ -1,11 +1,10 @@
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from urllib.robotparser import RobotFileParser
 
-from src.core.config import BASE_URL, HEADERS, ROBOTS_URL, NEWS_SOURCES
+from src.core.config import HEADERS, NEWS_SOURCES
 from src.core.database import supabase
-from src.scraper.parser import extract_article_data, scrape_article_content
 from src.scraper.sources import SOURCE_PARSERS
 from src.scraper.classifier import classify_category
 from src.utils.helpers import human_delay
@@ -35,35 +34,17 @@ def insert_article(article_meta):
         "url": article_meta['url'],
         "content": article_meta['content'],
         "category": article_meta['category'],
-        "source": article_meta.get('source', 'geo'),
+        "source": article_meta['source'],
     }
 
     try:
         response = supabase.table('news_articles').insert(article_data).execute()
-        source_label = article_meta.get('source', 'geo')
-        print(f"[✓] Article inserted: {article_meta['title']}{article_meta['category']} [{source_label}]")
+        print(f"[✓] Article inserted: {article_meta['title']}{article_meta['category']} [{article_meta['source']}]")
     except Exception as e:
         print(f"[!] Failed to insert article: {e}")
 
 
-def delete_old_articles():
-    try:
-        cutoff_date = (datetime.now() - timedelta(days=1)).isoformat()
-        response = (
-            supabase.table("news_articles")
-            .delete()
-            .lt("scraped_at", cutoff_date)
-            .execute()
-        )
-        deleted_count = len(response.data) if response.data else 0
-        print(f"[+] Deleted {deleted_count} old article(s) from Supabase.")
-    except Exception as e:
-        print(f"[!] Error deleting old articles: {e}")
-
-
-def get_robot_parser(robots_url=None):
-    if robots_url is None:
-        robots_url = ROBOTS_URL
+def get_robot_parser(robots_url):
     response = requests.get(robots_url, headers=HEADERS, timeout=10)
     response.raise_for_status()
 
@@ -88,7 +69,7 @@ def check_supabase_connection():
 
 
 def scrape_source(source_config, robot_parser):
-    """Scrape articles from a single news source."""
+    """Scrape articles from a single source."""
     source_name = source_config['name']
     display_name = source_config['display_name']
     base_url = source_config['base_url']
@@ -99,7 +80,7 @@ def scrape_source(source_config, robot_parser):
     print(f"{'='*50}")
 
     try:
-        response = requests.get(base_url, headers=HEADERS, timeout=10)
+        response = requests.get(base_url, headers=HEADERS, timeout=20)
         response.raise_for_status()
         soup = BeautifulSoup(response.text, 'html.parser')
     except Exception as e:
@@ -146,6 +127,7 @@ def scrape_once():
 
     total_new = 0
     for source_config in NEWS_SOURCES:
+        source_name = source_config['name']
         robots_url = source_config['robots_url']
         base_url = source_config['base_url']
 
@@ -170,6 +152,4 @@ def scrape_once():
     if total_new == 0:
         print("\n[=] No new articles found across all sources.")
     else:
-        print(f"\n[+] Total: {total_new} new article(s) added across all sources.")
-
-    delete_old_articles()
+        print(f"\n[+] Total: {total_new} new article(s) added to DB across all sources.")

@@ -60,6 +60,7 @@ def retrieve_articles(query: str, k: int = 3):
             'excerpt': article['excerpt'],
             'url': article['url'],
             'category': article['category'],
+            'source': article.get('source', 'geo'),
             'relevance_score': float(1 / (1 + distance)),
         })
 

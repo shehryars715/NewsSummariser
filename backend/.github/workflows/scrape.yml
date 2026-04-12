@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run scraper and rebuild FAISS index
+      - name: Scrape new articles
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
@@ -30,13 +30,9 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           python -c "
-          import sys
-          from src.scraper.scraper import scrape_once, delete_old_articles
-          from src.app.services.faiss_store import faiss_create
+          from src.scraper.scraper import scrape_once
 
-          print('=== Starting scrape cycle ===')
+          print('=== Starting scrape ===')
           scrape_once()
-          delete_old_articles()
-          faiss_create()
-          print('=== Cycle complete ===')
+          print('=== Done ===')
           "

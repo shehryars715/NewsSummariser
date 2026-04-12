@@ -26,6 +26,7 @@ async def summarize_by_url(request: URLSummaryRequest):
             title=article['title'],
             summary=summary,
             category=article.get('category', 'Unknown'),
+            source=article.get('source', 'geo'),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating summary: {str(e)}")

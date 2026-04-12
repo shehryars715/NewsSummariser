@@ -14,7 +14,7 @@ META_FILE = "metadata.pkl"
 def fetch_articles():
     """Get all articles from database."""
     print("Fetching articles from database...")
-    response = supabase.table('news_articles').select('id, title, excerpt, url, category').execute()
+    response = supabase.table('news_articles').select('id, title, excerpt, url, category, source').execute()
     print(f"Found {len(response.data)} articles")
     return response.data
 

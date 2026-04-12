@@ -12,6 +12,7 @@ class ArticleSummary(BaseModel):
     excerpt: str
     url: str
     category: str
+    source: str = "geo"
     relevance_score: float
 
 
@@ -30,3 +31,4 @@ class URLSummaryResponse(BaseModel):
     title: str
     summary: str
     category: str
+    source: str = "geo"

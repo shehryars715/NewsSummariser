@@ -19,6 +19,31 @@ HEADERS = {
 }
 CHECK_INTERVAL = 7200  # 2 hours
 
+# Multi-source configuration
+NEWS_SOURCES = [
+    {
+        "name": "geo",
+        "display_name": "Geo.tv",
+        "base_url": "https://www.geo.tv/latest-news",
+        "robots_url": "https://www.geo.tv/robots.txt",
+        "domain": "www.geo.tv",
+    },
+    {
+        "name": "tribune",
+        "display_name": "Express Tribune",
+        "base_url": "https://tribune.com.pk/latest",
+        "robots_url": "https://tribune.com.pk/robots.txt",
+        "domain": "tribune.com.pk",
+    },
+    {
+        "name": "thenews",
+        "display_name": "The News International",
+        "base_url": "https://www.thenews.com.pk/latest-stories",
+        "robots_url": "https://www.thenews.com.pk/robots.txt",
+        "domain": "www.thenews.com.pk",
+    },
+]
+
 # Models
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-base-en-v1.5")
 CHAT_MODEL = "gemini-2.5-flash"
