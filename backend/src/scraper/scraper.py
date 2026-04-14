@@ -46,21 +46,6 @@ def insert_article(article_meta):
         print(f"[!] Failed to insert article: {e}")
 
 
-def delete_old_articles():
-    try:
-        cutoff_date = (datetime.now() - timedelta(days=1)).isoformat()
-        response = (
-            supabase.table("news_articles")
-            .delete()
-            .lt("scraped_at", cutoff_date)
-            .execute()
-        )
-        deleted_count = len(response.data) if response.data else 0
-        print(f"[+] Deleted {deleted_count} old article(s) from Supabase.")
-    except Exception as e:
-        print(f"[!] Error deleting old articles: {e}")
-
-
 def get_robot_parser(robots_url=None):
     if robots_url is None:
         robots_url = ROBOTS_URL
@@ -172,4 +157,4 @@ def scrape_once():
     else:
         print(f"\n[+] Total: {total_new} new article(s) added across all sources.")
 
-    delete_old_articles()
+    
