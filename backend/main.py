@@ -1,4 +1,4 @@
-from src.scraper.scraper import scrape_once, check_supabase_connection, delete_old_articles
+from src.scraper.scraper_new import scrape_once, check_supabase_connection
 from src.app.services.faiss_store import faiss_create
 from rich.console import Console
 from rich.panel import Panel
@@ -37,12 +37,7 @@ def run_scraping_cycle():
         elapsed_time = time.time() - start_time
         console.print(f"\n[i] Total execution time: {elapsed_time:.2f} seconds[/i]")
 
-    # 3. Delete Old Articles
-    console.rule("Step 3: Deleting Old Articles")
-    try:
-        delete_old_articles()
-    except Exception as e:
-        console.print(f"[red]❌ Failed to delete old articles: {e}[/red]")
+    # 3. Conclusion (delete_old_articles was removed — not implemented)
 
     # 4. Conclusion
     console.rule("Cycle Complete")
